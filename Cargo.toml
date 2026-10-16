@@ -1,0 +1,11 @@
+[workspace]
+resolver = "3"
+members = ["cargo-cyclone-v", "cyclone-v-fwtools"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+cyclone-v-fwtools = { path = "cyclone-v-fwtools", version = "0.1.0" }
