@@ -1,0 +1,16 @@
+[package]
+name = "sidermux-image"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "no_std firmware boot image codecs and checksum primitives"
+readme = "README.md"
+keywords = ["embedded", "firmware", "bootloader", "crc32", "no-std"]
+categories = ["embedded", "no-std"]
+
+[dependencies]
+
+[features]
+default = ["cyclone-v"]
+cyclone-v = []

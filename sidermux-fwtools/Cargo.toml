@@ -1,0 +1,23 @@
+[package]
+name = "sidermux-fwtools"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Board-aware firmware packaging, inspection, and unpacking for SoC FPGA boot images"
+readme = "README.md"
+keywords = ["embedded", "fpga", "firmware", "bootloader", "boot-image"]
+categories = ["embedded", "development-tools"]
+
+[dependencies]
+sidermux-image = { workspace = true, default-features = false }
+elf = "0.8.0"
+serde = { version = "1.0.228", features = ["derive"] }
+sha2 = "0.10.1"
+thiserror = "2.0.21"
+tracing = "0.1.44"
+
+[features]
+default = ["cyclone-v", "board-de1-soc"]
+cyclone-v = ["sidermux-image/cyclone-v"]
+board-de1-soc = ["cyclone-v"]

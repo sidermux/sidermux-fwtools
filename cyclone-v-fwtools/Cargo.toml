@@ -1,7 +1,0 @@
-[package]
-name = "cyclone-v-fwtools"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-
-[dependencies]

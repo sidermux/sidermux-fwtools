@@ -1,11 +1,23 @@
 [workspace]
 resolver = "3"
-members = ["cargo-cyclone-v", "cyclone-v-fwtools"]
+members = [
+    "sidermux-image",
+    "sidermux-fwtools",
+    "cargo-sidermux",
+]
 
 [workspace.package]
-version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/sidermux/sidermux-fwtools"
 
 [workspace.dependencies]
-cyclone-v-fwtools = { path = "cyclone-v-fwtools", version = "0.1.0" }
+sidermux-image = { path = "sidermux-image", version = "0.1.0", default-features = false }
+sidermux-fwtools = { path = "sidermux-fwtools", version = "0.1.0", default-features = false }
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+panic = "abort"
+strip = true
