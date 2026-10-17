@@ -1,5 +1,9 @@
 //! `no_std` firmware boot image codecs and checksum primitives for sidermux.
 //!
+//! > [!WARNING]
+//! > **Beta software.** This project is pre-release and breaking changes may
+//! > happen frequently between versions. Pin the exact version you depend on.
+//!
 //! This crate has no dependencies and performs no allocation. Each supported
 //! device family ships its boot image codec as a module under [`families`],
 //! behind its own cargo feature; the crate stays `no_std` with or without any

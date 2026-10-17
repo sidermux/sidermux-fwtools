@@ -1,5 +1,9 @@
 //! Board-aware firmware packaging and inspection for SoC FPGA boot images.
 //!
+//! > [!WARNING]
+//! > **Beta software.** This project is pre-release and breaking changes may
+//! > happen frequently between versions. Pin the exact version you depend on.
+//!
 //! This crate hosts the reusable packaging and inspection operations shared by
 //! every supported device family. It never names a physical board directly:
 //! behavior is selected through a [`board::BoardProfile`], which pairs a family

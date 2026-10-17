@@ -24,6 +24,10 @@
   </p>
 </div>
 
+> [!WARNING]
+> **Beta software.** This project is pre-release and breaking changes may
+> happen frequently between versions. Pin the exact version you depend on.
+
 ---
 
 The host library of the sidermux firmware tools workspace. Family backends

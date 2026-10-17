@@ -1,5 +1,9 @@
 //! `cargo sidermux` packages, inspects, and unpacks SoC FPGA boot images.
 //!
+//! > [!WARNING]
+//! > **Beta software.** This project is pre-release and breaking changes may
+//! > happen frequently between versions. Pin the exact version you depend on.
+//!
 //! First supported family: Cyclone V (boards `cyclone-v-generic`, `de1-soc`).
 //!
 //! # Install

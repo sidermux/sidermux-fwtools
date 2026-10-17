@@ -20,6 +20,10 @@
   </p>
 </div>
 
+> [!WARNING]
+> **Beta software.** This project is pre-release and breaking changes may
+> happen frequently between versions. Pin the exact version you depend on.
+
 ---
 
 Cyclone V is the first supported family. Current profiles: `cyclone-v-generic`
