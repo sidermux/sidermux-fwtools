@@ -1,7 +1,12 @@
 //! A deliberately different format exercises shared code without production
 //! family features. It is a software test format, not hardware support.
 use crate::{
-    BootImage, Check, CheckStatus, CrcStatus, ImageError, ImageKind,
+    BootImage,
+    Check,
+    CheckStatus,
+    CrcStatus,
+    ImageError,
+    ImageKind,
     backend::{ElfPolicy, FamilyBackend},
     board::{BoardProfile, InputKind, OutputFormat, StorageLayout},
     extract_elf_load_image,
@@ -179,7 +184,7 @@ fn alternative_backend_controls_extraction_encoding_and_storage() {
     assert_eq!(&sd[4096..4352], &container);
     let report = inspect::inspect_bytes(
         &sd,
-        InspectOptions {
+        &InspectOptions {
             board: Some(&BOARD),
             ..Default::default()
         },
@@ -202,12 +207,6 @@ fn alternative_backend_controls_extraction_encoding_and_storage() {
 
 #[test]
 fn alternative_backend_controls_entry_coverage_and_alignment() {
-    let mut elf = elf();
-    elf[68..72].copy_from_slice(&0x21u32.to_le_bytes());
-    assert!(matches!(
-        extract_elf_load_image(&BOARD, &elf),
-        Err(ImageError::EntryNotExecutable)
-    ));
     #[derive(Debug)]
     struct BadAlignment;
     impl FamilyBackend for BadAlignment {
@@ -254,6 +253,13 @@ fn alternative_backend_controls_entry_coverage_and_alignment() {
         }
     }
     static BAD: BadAlignment = BadAlignment;
+
+    let mut elf = elf();
+    elf[68..72].copy_from_slice(&0x21u32.to_le_bytes());
+    assert!(matches!(
+        extract_elf_load_image(&BOARD, &elf),
+        Err(ImageError::EntryNotExecutable)
+    ));
     let board = BoardProfile {
         backend: &BAD,
         ..BOARD
@@ -276,15 +282,6 @@ fn board_capabilities_and_unknown_profiles_are_reported() {
         outputs: &[OutputFormat::Bootrom],
         storage: STORAGE,
     };
-    assert!(matches!(
-        BootImage::from_elf(&LIMITED, &elf()),
-        Err(ImageError::UnsupportedCapability { .. })
-    ));
-    let image = BootImage::from_raw_spl(&LIMITED, &[0; 0x30]).unwrap();
-    assert!(matches!(
-        image.render(OutputFormat::Sd),
-        Err(ImageError::UnsupportedCapability { .. })
-    ));
     static SD_ONLY: BoardProfile = BoardProfile {
         id: "sd-only",
         description: "test",
@@ -295,6 +292,15 @@ fn board_capabilities_and_unknown_profiles_are_reported() {
         outputs: &[OutputFormat::Sd],
         storage: STORAGE,
     };
+    assert!(matches!(
+        BootImage::from_elf(&LIMITED, &elf()),
+        Err(ImageError::UnsupportedCapability { .. })
+    ));
+    let image = BootImage::from_raw_spl(&LIMITED, &[0; 0x30]).unwrap();
+    assert!(matches!(
+        image.render(OutputFormat::Sd),
+        Err(ImageError::UnsupportedCapability { .. })
+    ));
     let image = BootImage::from_raw_spl(&SD_ONLY, &[0; 0x30]).unwrap();
     assert!(image.render(OutputFormat::Sd).is_ok());
     assert!(matches!(
@@ -318,7 +324,7 @@ fn alternative_backend_unpack_uses_profile_slot_offsets() {
     let report = crate::unpack::unpack_image(
         &input,
         &output,
-        crate::unpack::UnpackOptions {
+        &crate::unpack::UnpackOptions {
             board: Some(&BOARD),
             kind: None,
         },
@@ -366,7 +372,7 @@ fn no_family_features_leave_generic_elf_inspection_available() {
         inspect::resolve_backends(&mut src, &InspectOptions::default(), &[]),
         Err(ImageError::NoBackend)
     ));
-    let report = inspect::inspect_bytes(&elf(), InspectOptions::default()).unwrap();
+    let report = inspect::inspect_bytes(&elf(), &InspectOptions::default()).unwrap();
     assert_eq!(report.schema, 3);
     assert_eq!(report.board, None);
     assert_eq!(report.family, None);

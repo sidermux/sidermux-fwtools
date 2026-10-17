@@ -9,6 +9,9 @@ readme = "README.md"
 keywords = ["embedded", "firmware", "bootloader", "crc32", "no-std"]
 categories = ["embedded", "no-std"]
 
+[lints]
+workspace = true
+
 [dependencies]
 
 [features]

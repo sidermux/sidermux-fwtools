@@ -41,6 +41,7 @@ pub mod families {
 ///
 /// This is the integrity checksum used by the boot ROM image formats packaged
 /// by this workspace. See [`Crc32Bzip2`] for chunked input.
+#[must_use]
 pub fn crc32_bzip2(bytes: &[u8]) -> u32 {
     let mut crc = Crc32Bzip2::new();
     crc.update(bytes);
@@ -57,6 +58,7 @@ pub struct Crc32Bzip2 {
 
 impl Crc32Bzip2 {
     /// Starts a computation in the standard initial state.
+    #[must_use]
     pub const fn new() -> Self {
         Self { state: 0xFFFF_FFFF }
     }
@@ -77,6 +79,7 @@ impl Crc32Bzip2 {
     }
 
     /// Consumes the computation and returns the final CRC value.
+    #[must_use]
     pub fn finalize(self) -> u32 {
         !self.state
     }

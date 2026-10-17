@@ -1,3 +1,4 @@
+//! Error types for packaging, inspection, and unpacking.
 use thiserror::Error;
 
 use crate::kind::ImageKind;
@@ -19,7 +20,9 @@ pub enum ImageError {
     /// The board profile does not declare the requested input or output.
     #[error("board '{board}' does not support {capability}")]
     UnsupportedCapability {
+        /// The profile that rejected the request.
         board: &'static str,
+        /// The missing capability, e.g. `"Elf input"`.
         capability: String,
     },
     /// The board's storage geometry is invalid.
@@ -33,7 +36,10 @@ pub enum ImageError {
     Elf(#[from] elf::ParseError),
     /// The ELF targets a different machine than the family accepts.
     #[error("Unsupported ELF machine")]
-    UnsupportedMachine { actual: u16 },
+    UnsupportedMachine {
+        /// The `e_machine` value found in the ELF header.
+        actual: u16,
+    },
     /// The ELF class or byte order does not match the family contract.
     #[error("unsupported ELF class or byte order for the selected family")]
     UnsupportedElfEncoding,
@@ -57,12 +63,22 @@ pub enum ImageError {
     LengthOverflow,
     /// The encoded image would exceed the family's boot size limit.
     #[error("boot image is {size} bytes, exceeding family boot limit of {max} bytes")]
-    ImageTooLarge { size: usize, max: usize },
+    ImageTooLarge {
+        /// Encoded image length in bytes.
+        size: usize,
+        /// The family's boot size limit in bytes.
+        max: usize,
+    },
     /// The raw payload cannot hold the prefix, header, and boot-entry slot.
     #[error(
         "raw payload is {actual} bytes, but at least {needed} are required for the prefix, header, and boot-entry slot"
     )]
-    InputTooShort { actual: usize, needed: usize },
+    InputTooShort {
+        /// Supplied payload length in bytes.
+        actual: usize,
+        /// Minimum required length in bytes.
+        needed: usize,
+    },
     /// The ROM entry slot is not fully covered by executable file-backed
     /// ELF content.
     #[error(
@@ -71,7 +87,12 @@ pub enum ImageError {
     EntryNotExecutable,
     /// The DTB offset would overwrite the extracted ELF payload.
     #[error("DTB offset {offset:#x} overlaps the extracted ELF payload ({payload_len:#x} bytes)")]
-    DtbOverlap { offset: usize, payload_len: usize },
+    DtbOverlap {
+        /// The requested DTB offset, relative to image start.
+        offset: usize,
+        /// Length of the extracted payload in bytes.
+        payload_len: usize,
+    },
     /// The supplied DTB lacks the FDT magic, a complete header, or a
     /// consistent declared total size.
     #[error(
@@ -83,7 +104,12 @@ pub enum ImageError {
     #[error(
         "the ELF payload is already a complete packaged ROM image ({declared_len} bytes, CRC 0x{crc32:08X}); double packaging would corrupt it. Pass the packaged image itself, or use --packaged to wrap it as-is"
     )]
-    ElfContainsPackagedImage { declared_len: usize, crc32: u32 },
+    ElfContainsPackagedImage {
+        /// Declared length of the embedded packaged image.
+        declared_len: usize,
+        /// Stored CRC of the embedded packaged image.
+        crc32: u32,
+    },
     /// The input does not satisfy the complete family ROM contract required
     /// for packaged-image adoption.
     #[error(
@@ -94,30 +120,56 @@ pub enum ImageError {
     #[error(
         "file is {actual} bytes, but at least {needed} bytes are required to read the boot image header"
     )]
-    TruncatedImage { needed: usize, actual: usize },
+    TruncatedImage {
+        /// Minimum bytes required to read the header.
+        needed: usize,
+        /// Supplied file size in bytes.
+        actual: usize,
+    },
     /// The file size is not a whole number of boot slots.
     #[error(
         "file size {size} is not a multiple of the selected boot slot size ({slot_size} bytes)"
     )]
-    InvalidSlotSize { size: usize, slot_size: usize },
+    InvalidSlotSize {
+        /// Supplied file size in bytes.
+        size: usize,
+        /// The profile's slot size in bytes.
+        slot_size: usize,
+    },
     /// No input signature (ELF, MBR, or boot ROM header) matched.
     #[error("unrecognized image format: no ELF, MBR, or Boot ROM header signature found")]
     UnknownImageFormat,
     /// Several formats plausibly match; an explicit kind is required.
     #[error(
         "ambiguous image format: file matches multiple formats ({}); pass an explicit kind to disambiguate",
-        .candidates.iter().map(|kind| kind.to_string()).collect::<Vec<_>>().join(", ")
+        .candidates.iter().map(ImageKind::to_string).collect::<Vec<_>>().join(", ")
     )]
-    AmbiguousImageFormat { candidates: Vec<ImageKind> },
+    AmbiguousImageFormat {
+        /// The formats the detector considers plausible.
+        candidates: Vec<ImageKind>,
+    },
     /// The boot ROM validation word is missing or incorrect.
     #[error("invalid Boot ROM validation word: expected 0x31305341, found 0x{actual:08X}")]
-    InvalidValidationWord { actual: u32 },
+    InvalidValidationWord {
+        /// The validation word found in the header.
+        actual: u32,
+    },
     /// The stored header checksum does not match the computed one.
     #[error("Boot ROM header checksum mismatch: stored 0x{stored:04X}, computed 0x{computed:04X}")]
-    HeaderChecksumMismatch { stored: u16, computed: u16 },
+    HeaderChecksumMismatch {
+        /// Checksum stored in the header.
+        stored: u16,
+        /// Checksum computed over the header bytes.
+        computed: u16,
+    },
     /// The stored CRC does not match the computed image CRC.
     #[error("CRC32 mismatch: stored 0x{stored:08X}, computed 0x{computed:08X}")]
-    CrcMismatch { stored: u32, computed: u32 },
+    CrcMismatch {
+        /// CRC stored in the image.
+        stored: u32,
+        /// CRC computed over the declared image bytes.
+        computed: u32,
+    },
     /// The MBR has no partition matching the selected storage layout.
     #[error("no boot partition matching the selected storage layout found in the MBR")]
     NoBootPartition,
@@ -126,6 +178,7 @@ pub enum ImageError {
         "unpack applies to Boot ROM images, containers, and SD card images, not ELF files (use pack)"
     )]
     UnpackElfInput,
+    /// Reading the image failed at the I/O layer.
     #[error("I/O error while reading the image")]
     Io(#[from] std::io::Error),
 }
@@ -136,34 +189,63 @@ pub enum ElfValidationError {
     /// A segment's file range extends past the end of the ELF file.
     #[error("Invalid ELF Segment Source Range")]
     InvalidSourceRange {
+        /// Segment file offset.
         offset: u64,
+        /// Segment file size in bytes.
         size: u64,
+        /// Actual ELF file length in bytes.
         file_len: usize,
     },
     /// `p_filesz` exceeds `p_memsz`, which ELF forbids.
     #[error("Corrupt size constraint: p_filesz ({filesz}) exceeds p_memsz ({memsz})")]
-    SizeMismatch { filesz: u64, memsz: u64 },
+    SizeMismatch {
+        /// File-backed size in bytes.
+        filesz: u64,
+        /// Memory size in bytes.
+        memsz: u64,
+    },
     /// A load address lies outside the family's supported memory window.
     #[error("Load address 0x{addr:X} lies outside supported OCRAM range (0x{start:X}..0x{end:X})")]
-    InvalidOcramAddress { addr: u64, start: u64, end: u64 },
+    InvalidOcramAddress {
+        /// The rejected load address.
+        addr: u64,
+        /// Inclusive start of the supported window.
+        start: u64,
+        /// Exclusive end of the supported window.
+        end: u64,
+    },
     /// Two segments claim overlapping destination memory.
     #[error(
         "Overlapping destination segment detected: 0x{start_a:X}..0x{end_a:X} conflicts with 0x{start_b:X}..0x{end_b:X}"
     )]
     OverlappingSegments {
+        /// Start of the first segment's memory range.
         start_a: u64,
+        /// End of the first segment's memory range.
         end_a: u64,
+        /// Start of the second segment's memory range.
         start_b: u64,
+        /// End of the second segment's memory range.
         end_b: u64,
     },
     /// The ELF violates the family's load/execution address identity rule.
     #[error(
         "Load address (0x{load_addr:X}) and execution address (0x{exec_addr:X}) do not match contract requirements"
     )]
-    ContractViolation { load_addr: u64, exec_addr: u64 },
+    ContractViolation {
+        /// Physical load address (`p_paddr`).
+        load_addr: u64,
+        /// Virtual execution address (`p_vaddr`).
+        exec_addr: u64,
+    },
     /// A segment's address range computation overflowed.
     #[error("Segment address range overflows: start={start:#x}, size={size:#x}")]
-    AddressOverflow { start: u64, size: u64 },
+    AddressOverflow {
+        /// Segment start address.
+        start: u64,
+        /// Segment size in bytes.
+        size: u64,
+    },
     /// An address computation overflowed.
     #[error("Range overflow")]
     RangeOverflow,

@@ -9,6 +9,9 @@ readme = "README.md"
 keywords = ["embedded", "fpga", "firmware", "bootloader", "boot-image"]
 categories = ["embedded", "development-tools"]
 
+[lints]
+workspace = true
+
 [dependencies]
 sidermux-image = { workspace = true, default-features = false }
 elf = "0.8.0"

@@ -1,13 +1,14 @@
 //! Cyclone V ROM header parsing and streamed integrity verification.
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use sidermux_image::families::cyclone_v::Header;
+
 use crate::{
     error::ImageError,
     inspect::BootRomInfo,
     kind::{Check, CheckStatus, CrcStatus},
     source::ImageSource,
 };
-use serde::Serialize;
-use sha2::{Digest, Sha256};
-use sidermux_image::families::cyclone_v::Header;
 const VALIDATION_WORD: u32 = 0x3130_5341;
 const HEADER_OFFSET: u64 = Header::OFFSET as u64;
 const HEADER_SIZE: u64 = Header::SIZE as u64;
@@ -17,14 +18,23 @@ const BOOT_ENTRY_END: u64 = 0x50;
 const ALIGN: u64 = 16;
 const VERIFY_CHUNK: usize = 64 * 1024;
 
+/// The first supported family's ROM header details as parsed from an image
+/// window.
 #[derive(Clone, Debug, Serialize)]
 pub struct HeaderInfo {
+    /// The validation word read from the header.
     pub validation_word: u32,
+    /// Whether the validation word matches the family constant.
     pub validation_word_ok: bool,
+    /// Header version byte.
     pub version: u8,
+    /// Header flags byte.
     pub flags: u8,
+    /// Declared payload length in 32-bit words.
     pub length_words: u16,
+    /// Header checksum stored in the header.
     pub header_checksum: u16,
+    /// Whether the stored checksum matches the computed byte sum.
     pub header_checksum_ok: bool,
 }
 
@@ -187,6 +197,8 @@ pub(crate) fn inspect_bootrom_in(
     Ok(info)
 }
 
+/// The family's named checks for one parsed ROM image.
+#[must_use]
 pub fn bootrom_checks(info: &BootRomInfo) -> Vec<Check> {
     let header = info
         .header
@@ -237,8 +249,7 @@ pub fn bootrom_checks(info: &BootRomInfo) -> Vec<Check> {
                 "boot entry preserved",
                 CheckStatus::Pass,
                 format!(
-                    "CRC sits at 0x{offset:X}, past the boot-entry instruction at 0x4C..0x{:X}",
-                    BOOT_ENTRY_END,
+                    "CRC sits at 0x{offset:X}, past the boot-entry instruction at 0x4C..0x{BOOT_ENTRY_END:X}"
                 ),
             ),
             Some(offset) => Check::new(
@@ -294,7 +305,7 @@ fn crc_check(info: &BootRomInfo) -> Check {
             CheckStatus::Warn,
             "CRC not checked (integrity verification was skipped)",
         ),
-        (_, CrcStatus::Unreadable) => Check::new(
+        (_, CrcStatus::Unreadable) | (None, CrcStatus::Passed | CrcStatus::Failed) => Check::new(
             "image CRC",
             CheckStatus::Fail,
             "CRC region is not readable in the inspected window",
@@ -303,11 +314,6 @@ fn crc_check(info: &BootRomInfo) -> Check {
             "image CRC",
             CheckStatus::Warn,
             "no boot-image CRC semantics for this data",
-        ),
-        (None, CrcStatus::Passed) | (None, CrcStatus::Failed) => Check::new(
-            "image CRC",
-            CheckStatus::Fail,
-            "CRC region is not readable in the inspected window",
         ),
     }
 }

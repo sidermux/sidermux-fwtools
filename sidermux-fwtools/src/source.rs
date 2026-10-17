@@ -20,6 +20,7 @@ pub trait ImageSource {
     /// Total size of the artifact in bytes. Must not read the contents.
     fn len(&self) -> io::Result<u64>;
 
+    /// Whether the artifact has no bytes. Defaults to `len() == 0`.
     fn is_empty(&self) -> io::Result<bool> {
         self.len().map(|len| len == 0)
     }

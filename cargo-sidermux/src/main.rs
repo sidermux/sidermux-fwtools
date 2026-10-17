@@ -501,7 +501,7 @@ fn handle_inspect(
         verify: !no_verify,
     };
 
-    let mut parsed = inspect::inspect_file(input, options)
+    let mut parsed = inspect::inspect_file(input, &options)
         .into_diagnostic()
         .wrap_err_with(|| format!("Failed to inspect {}", input.display()))?;
     parsed.input.path = Some(input.display().to_string());
@@ -532,7 +532,7 @@ fn handle_unpack(
         kind: kind.map(ImageKind::from),
     };
 
-    let report = unpack::unpack_image(input, output, options)
+    let report = unpack::unpack_image(input, output, &options)
         .into_diagnostic()
         .wrap_err_with(|| format!("Failed to unpack {}", input.display()))?;
 

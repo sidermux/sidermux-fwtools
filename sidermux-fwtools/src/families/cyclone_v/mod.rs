@@ -10,6 +10,8 @@ use crate::{
     source::ImageSource,
 };
 
+/// Default storage policy shared by the family's profiles: four 64 KiB slots
+/// in a partition of type `0xA2` starting at LBA 2048.
 pub const STORAGE: StorageLayout = StorageLayout {
     slot_size: 65536,
     slot_count: 4,
@@ -17,8 +19,10 @@ pub const STORAGE: StorageLayout = StorageLayout {
     start_lba: 2048,
     partition_sectors: 20480,
 };
+/// The first supported family's backend.
 #[derive(Debug)]
 pub struct CycloneV;
+/// The compiled backend instance for the [`CycloneV`] family.
 pub static BACKEND: CycloneV = CycloneV;
 const INPUTS: &[InputKind] = &[
     InputKind::Elf,
@@ -31,6 +35,7 @@ const OUTPUTS: &[OutputFormat] = &[
     OutputFormat::Preloader,
     OutputFormat::Sd,
 ];
+/// Generic profile for the family's ROM format and default SD layout.
 pub static GENERIC: BoardProfile = BoardProfile {
     id: "cyclone-v-generic",
     description: "Cyclone V ROM image and default SD layout",
@@ -41,6 +46,7 @@ pub static GENERIC: BoardProfile = BoardProfile {
     outputs: OUTPUTS,
     storage: STORAGE,
 };
+/// Terasic DE1-SoC profile; validated with vendor SPL artifacts.
 #[cfg(feature = "board-de1-soc")]
 pub static DE1_SOC: BoardProfile = BoardProfile {
     id: "de1-soc",
@@ -64,8 +70,8 @@ impl FamilyBackend for CycloneV {
             class: 1,
             endian: 1,
             machine: elf::abi::EM_ARM,
-            load_start: 0xFFFF0000,
-            load_end: 0xFFFFF000,
+            load_start: 0xFFFF_0000,
+            load_end: 0xFFFF_F000,
             entry_offset: 0x4C,
             instruction_alignment: 4,
             instruction_size: 4,

@@ -89,18 +89,15 @@
 //!
 //! # Adding a family
 //!
-//! 1. Add its `no_std` codec under `sidermux-image::families` behind a
-//!    feature.
-//! 2. Implement [`backend::FamilyBackend`] in a host family module. Supply ELF
-//!    policy, probing, encoding, inspection, verification, and a valid default
-//!    storage layout. Keep format-specific rules out of shared extraction and
-//!    storage.
-//! 3. Add a typed [`inspect::HeaderDetails`] variant, register the backend and
-//!    a generic profile, and forward its feature through all three crates. Add
-//!    human report rendering for its header details if desired.
-//! 4. Test known independent format artifacts and failure cases, plus feature
-//!    builds. Never advertise a family as supported solely because a synthetic
-//!    backend test passes.
+//! 1. Add its `no_std` codec under `sidermux-image::families` behind a feature.
+//! 2. Implement [`backend::FamilyBackend`] in a host family module. Supply ELF policy, probing,
+//!    encoding, inspection, verification, and a valid default storage layout. Keep format-specific
+//!    rules out of shared extraction and storage.
+//! 3. Add a typed [`inspect::HeaderDetails`] variant, register the backend and a generic profile,
+//!    and forward its feature through all three crates. Add human report rendering for its header
+//!    details if desired.
+//! 4. Test known independent format artifacts and failure cases, plus feature builds. Never
+//!    advertise a family as supported solely because a synthetic backend test passes.
 //!
 //! # Adding a board
 //!
@@ -289,6 +286,7 @@ pub enum PayloadKind {
 }
 /// Probes `raw` with `board`'s family backend to decide whether it is already
 /// a complete packaged ROM image.
+#[must_use]
 pub fn classify_payload(board: &BoardProfile, raw: &[u8]) -> PayloadKind {
     if verified_image(board, raw).is_some() {
         PayloadKind::PackagedRom
@@ -312,14 +310,17 @@ pub struct BootImage {
 }
 impl BootImage {
     /// The encoded ROM image bytes (the declared image, unpadded).
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
     /// Consumes the image, returning the encoded bytes.
+    #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
         self.bytes
     }
     /// The profile this image was built with.
+    #[must_use]
     pub fn board(&self) -> &'static BoardProfile {
         self.board
     }

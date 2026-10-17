@@ -1,3 +1,4 @@
+//! Integration tests for the `cargo sidermux pack` subcommand.
 #![cfg(feature = "cyclone-v")]
 use std::{
     path::PathBuf,
@@ -130,7 +131,7 @@ fn invalid_dtb_options_never_write_an_output() {
         command.extend_from_slice(&["--output", "output.bin"]);
         let result = dir.run(&command);
         assert!(!result.status.success(), "unexpected success for {args:?}");
-        assert!(!result.stderr.is_empty());
+        assert_ne!(result.stderr, b"");
         assert!(!dir.0.join("output.bin").exists());
     }
 }

@@ -1,3 +1,4 @@
+//! Integration tests for the `cargo sidermux boards` subcommand.
 use std::process::{Command, Output};
 
 fn run(args: &[&str]) -> Output {

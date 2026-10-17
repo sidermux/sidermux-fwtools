@@ -1,3 +1,4 @@
+//! Image kinds, detection results, and named validation checks.
 use std::fmt;
 
 use serde::Serialize;
@@ -93,6 +94,7 @@ pub enum CrcStatus {
 }
 
 impl Check {
+    /// Builds a check from its name, outcome, and explanation.
     pub fn new(name: impl Into<String>, status: CheckStatus, detail: impl Into<String>) -> Self {
         Self {
             name: name.into(),

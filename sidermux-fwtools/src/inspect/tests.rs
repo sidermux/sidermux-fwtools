@@ -1,7 +1,7 @@
-use crate::test_support::BOARD;
 use std::io;
 
 use super::*;
+use crate::test_support::BOARD;
 const SLOT_SIZE: usize = 65536;
 const MIN_WINDOW: u64 = 0x4C;
 use crate::{BootImage, kind::CrcStatus};
@@ -154,7 +154,7 @@ fn fast_mode_reports_not_checked() {
     let image = packed_image(&min_payload());
     let report = inspect_bytes(
         image.as_bytes(),
-        InspectOptions {
+        &InspectOptions {
             board: None,
             verify: false,
             ..Default::default()
@@ -197,7 +197,7 @@ fn mkpimage_fast_mode_leaves_integrity_unchecked() {
         .unwrap();
     let report = inspect_bytes(
         &container,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::Preloader),
             verify: false,
@@ -243,7 +243,7 @@ fn mkpimage_detects_differing_slots() {
 #[test]
 fn mkpimage_rejects_non_multiple_sizes() {
     assert!(matches!(
-        inspect_container(BOARD, &[0u8; SLOT_SIZE + 4]),
+        inspect_container(BOARD, &vec![0u8; SLOT_SIZE + 4]),
         Err(ImageError::InvalidSlotSize { .. })
     ));
 }
@@ -311,7 +311,7 @@ fn detection_is_ambiguous_for_a_single_slot() {
     assert!(kinds.contains(&ImageKind::Preloader));
 
     assert!(matches!(
-        inspect_bytes(&slot, Default::default()),
+        inspect_bytes(&slot, &InspectOptions::default()),
         Err(ImageError::AmbiguousImageFormat { .. })
     ));
 }
@@ -332,7 +332,7 @@ fn detection_resolves_sd_and_bootrom_unambiguously() {
 fn detection_rejects_unknown_data() {
     assert!(detect_kind(&vec![0xDE; 4096]).is_empty());
     assert!(matches!(
-        inspect_bytes(&vec![0xDE; 4096], Default::default()),
+        inspect_bytes(&vec![0xDE; 4096], &InspectOptions::default()),
         Err(ImageError::UnknownImageFormat)
     ));
 }
@@ -342,7 +342,7 @@ fn override_kind_inspects_without_detection() {
     let slot = packed_image(&min_payload()).slot_bytes().unwrap();
     let report = inspect_bytes(
         &slot,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::BootRom),
             verify: true,
@@ -359,7 +359,7 @@ fn sd_checks_pass_for_generated_image() {
     let image = packed_image(&min_payload()).to_sd_image().unwrap();
     let report = inspect_bytes(
         &image,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::SdImage),
             verify: true,
@@ -422,7 +422,7 @@ fn sparse_sd_file() -> (TempFile, Vec<u8>) {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
 
     let image = packed_image(&min_payload()).to_sd_image().unwrap();
-    let path = std::env::temp_dir().join(format!("cvgx-sd-{}-{n}-test.img", std::process::id(),));
+    let path = std::env::temp_dir().join(format!("cvgx-sd-{}-{n}-test.img", std::process::id()));
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -450,7 +450,7 @@ fn structural_sd_inspection_reads_bounded_ranges() {
 
     let report = inspect_source(
         &mut counting,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::SdImage),
             verify: false,
@@ -482,7 +482,7 @@ fn integrity_sd_inspection_stays_bounded_by_container() {
 
     let report = inspect_source(
         &mut counting,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::SdImage),
             verify: true,
@@ -506,8 +506,8 @@ fn integrity_sd_inspection_stays_bounded_by_container() {
 fn file_and_memory_inspection_agree() {
     let (file, image) = sparse_sd_file();
     let path = file.0.clone();
-    let from_file = inspect_file(&path, Default::default()).unwrap();
-    let from_memory = inspect_bytes(&image, Default::default()).unwrap();
+    let from_file = inspect_file(&path, &InspectOptions::default()).unwrap();
+    let from_memory = inspect_bytes(&image, &InspectOptions::default()).unwrap();
 
     // Debug-string equality: the two paths must produce identical reports.
     assert_eq!(format!("{from_file:?}"), format!("{from_memory:?}"));
@@ -520,7 +520,7 @@ fn explicit_kind_can_inspect_a_damaged_signature_with_one_backend() {
     bytes[0x40] ^= 0xFF;
     let report = inspect_bytes(
         &bytes,
-        InspectOptions {
+        &InspectOptions {
             board: None,
             kind: Some(ImageKind::BootRom),
             verify: true,
@@ -543,7 +543,7 @@ fn sd_container_scan_stops_before_later_stage_data() {
     let after_container =
         BOARD.storage.start_lba as usize * 512 + BOARD.storage.slot_size * BOARD.storage.slot_count;
     disk[after_container..after_container + BOARD.storage.slot_size].fill(0xA5);
-    let report = inspect_bytes(&disk, InspectOptions::default()).unwrap();
+    let report = inspect_bytes(&disk, &InspectOptions::default()).unwrap();
     let container = report
         .sd
         .unwrap()

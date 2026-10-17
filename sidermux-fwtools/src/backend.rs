@@ -67,6 +67,7 @@ pub trait FamilyBackend: std::fmt::Debug + Send + Sync {
 
 /// Every family backend compiled into this build. Empty when no family
 /// feature is enabled.
+#[must_use]
 pub fn families() -> &'static [&'static dyn FamilyBackend] {
     static REGISTERED: &[&dyn FamilyBackend] = &[
         #[cfg(feature = "cyclone-v")]

@@ -64,7 +64,7 @@ pub struct UnpackReport {
 pub fn unpack_image(
     input: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
-    options: UnpackOptions,
+    options: &UnpackOptions,
 ) -> Result<UnpackReport, ImageError> {
     let file = std::fs::File::open(input.as_ref())?;
     let mut src = FileSource(file);
@@ -203,15 +203,13 @@ pub(crate) fn crc_status_of(ctx: Context, declared: &[u8]) -> CrcStatus {
             declared.len() as u64,
             true,
         )
-        .map(|info| info.crc_status)
-        .unwrap_or(CrcStatus::Unreadable)
+        .map_or(CrcStatus::Unreadable, |info| info.crc_status)
 }
 
 /// Probe-reads the first bytes of a slot to decide whether it is blank.
 fn probe_blank(ctx: Context, src: &mut dyn ImageSource, base: u64) -> bool {
     src.read_vec_at(base, ctx.backend.probe_len())
-        .map(|probe| probe.iter().all(|&b| b == 0))
-        .unwrap_or(true)
+        .map_or(true, |probe| probe.iter().all(|&b| b == 0))
 }
 
 /// Writes the declared image of every non-blank container slot.
@@ -247,11 +245,10 @@ fn unpack_sd_container(
 
 #[cfg(all(test, feature = "cyclone-v"))]
 mod tests {
-    use crate::test_support::BOARD;
     use std::path::PathBuf;
 
     use super::*;
-    use crate::{BootImage, kind::CheckStatus};
+    use crate::{BootImage, kind::CheckStatus, test_support::BOARD};
 
     fn packed_sd() -> Vec<u8> {
         let payload = crate::test_support::spl_payload(0x400);
@@ -262,7 +259,7 @@ mod tests {
     }
 
     fn temp_dir(tag: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("cvgx-unpack-{}-{tag}", std::process::id(),));
+        let dir = std::env::temp_dir().join(format!("cvgx-unpack-{}-{tag}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir
     }
@@ -276,7 +273,7 @@ mod tests {
         std::fs::write(&input_path, &sd).unwrap();
 
         let out = temp_dir("out");
-        let report = unpack_image(&input_path, &out, UnpackOptions::default()).unwrap();
+        let report = unpack_image(&input_path, &out, &UnpackOptions::default()).unwrap();
 
         assert_eq!(report.kind, ImageKind::SdImage);
         let names: Vec<_> = report.files.iter().map(|f| f.name.as_str()).collect();
@@ -327,7 +324,7 @@ mod tests {
         std::fs::write(&input_path, &sd).unwrap();
 
         let out = temp_dir("out2");
-        let report = unpack_image(&input_path, &out, UnpackOptions::default()).unwrap();
+        let report = unpack_image(&input_path, &out, &UnpackOptions::default()).unwrap();
 
         // Extraction still happened; the failing CRC is reported.
         let slot0 = report.files.iter().find(|f| f.name == "slot0.bin").unwrap();
@@ -358,7 +355,7 @@ mod tests {
         std::fs::write(&input, &elf).unwrap();
 
         let out = temp_dir("out3");
-        let err = unpack_image(&input, &out, UnpackOptions::default()).unwrap_err();
+        let err = unpack_image(&input, &out, &UnpackOptions::default()).unwrap_err();
         assert!(matches!(err, ImageError::UnpackElfInput));
 
         let _ = std::fs::remove_dir_all(&dir);
@@ -381,7 +378,7 @@ mod tests {
         std::fs::write(&input, &slot).unwrap();
 
         let out = temp_dir("out4");
-        let err = unpack_image(&input, &out, UnpackOptions::default()).unwrap_err();
+        let err = unpack_image(&input, &out, &UnpackOptions::default()).unwrap_err();
         assert!(matches!(err, ImageError::AmbiguousImageFormat { .. }));
 
         let _ = std::fs::remove_dir_all(&dir);

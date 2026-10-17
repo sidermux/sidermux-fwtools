@@ -40,6 +40,9 @@ fn render_checks(out: &mut String, checks: &[Check]) {
     }
 }
 
+// A single cohesive renderer: the human report interleaves section layout
+// and wording, so splitting it adds indirection, not clarity.
+#[allow(clippy::too_many_lines)]
 pub fn render(report: &InspectReport) -> String {
     let mut out = String::new();
     let input = &report.input;

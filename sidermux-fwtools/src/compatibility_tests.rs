@@ -1,7 +1,9 @@
-use crate::test_support::BOARD;
 use crate::{
-    BootImage, ImageError, assemble_elf_with_dtb, extract_elf_load_image,
-    test_support::{elf_with_payload, spl_payload},
+    BootImage,
+    ImageError,
+    assemble_elf_with_dtb,
+    extract_elf_load_image,
+    test_support::{BOARD, elf_with_payload, spl_payload},
 };
 
 fn dtb() -> Vec<u8> {

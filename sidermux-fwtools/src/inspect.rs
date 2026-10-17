@@ -100,6 +100,7 @@ pub struct BootRomInfo {
     pub crc_offset: Option<u64>,
     /// CRC32 (bzip2 flavour) stored in the image; read during verification.
     pub crc32: Option<u32>,
+    /// Integrity verification outcome for the image.
     pub crc_status: CrcStatus,
     /// SHA-256 over the declared image; only computed with verification.
     pub payload_sha256: Option<String>,
@@ -113,13 +114,19 @@ pub enum HeaderDetails {
     /// ROM header details of the first supported family.
     #[cfg(feature = "cyclone-v")]
     CycloneV(crate::families::cyclone_v::rom::HeaderInfo),
+    /// Synthetic variant exercising the shared report pipeline without any
+    /// production family feature.
     #[cfg(test)]
-    Test { tag: u32 },
+    Test {
+        /// Arbitrary discriminator for test assertions.
+        tag: u32,
+    },
 }
 impl HeaderDetails {
     /// Returns the header details when they belong to the first supported
     /// family.
     #[cfg(feature = "cyclone-v")]
+    #[must_use]
     pub fn as_cyclone_v(&self) -> Option<&crate::families::cyclone_v::rom::HeaderInfo> {
         match self {
             Self::CycloneV(header) => Some(header),
@@ -578,6 +585,7 @@ fn detect_with(ctx: Context, size: u64, head: &[u8]) -> Vec<DetectionCandidate> 
 ///
 /// Detection never guesses: an empty result means nothing matched, and
 /// multiple entries mean the caller must select a backend or kind explicitly.
+#[must_use]
 pub fn detect_kind(raw: &[u8]) -> Vec<DetectionCandidate> {
     let mut result = Vec::new();
     for backend in families() {
@@ -618,8 +626,10 @@ pub(crate) fn resolve_backends(
     let size = src.len()?;
     let probe = options
         .board
-        .map(|b| b.backend.probe_len())
-        .unwrap_or_else(|| available.iter().map(|b| b.probe_len()).max().unwrap_or(0))
+        .map_or_else(
+            || available.iter().map(|b| b.probe_len()).max().unwrap_or(0),
+            |b| b.backend.probe_len(),
+        )
         .max(512);
     let head = src.read_vec_at(0, size.min(probe as u64) as usize)?;
     let detected_by = if options.kind.is_some() {
@@ -882,7 +892,7 @@ pub(crate) fn sd_checks(info: &SdImageInfo) -> Vec<Check> {
 /// Detection never guesses: when several formats plausibly match,
 /// [`ImageError::AmbiguousImageFormat`] is returned listing them, and the
 /// caller should ask for an explicit kind.
-pub fn inspect_bytes(raw: &[u8], options: InspectOptions) -> Result<InspectReport, ImageError> {
+pub fn inspect_bytes(raw: &[u8], options: &InspectOptions) -> Result<InspectReport, ImageError> {
     let mut src = BytesSource(raw);
     inspect_source(&mut src, options)
 }
@@ -893,7 +903,7 @@ pub fn inspect_bytes(raw: &[u8], options: InspectOptions) -> Result<InspectRepor
 /// ELF inputs are read into memory (see [`inspect_elf`]).
 pub fn inspect_file(
     path: impl AsRef<Path>,
-    options: InspectOptions,
+    options: &InspectOptions,
 ) -> Result<InspectReport, ImageError> {
     let file = std::fs::File::open(path)?;
     let mut src = FileSource(file);
@@ -902,10 +912,10 @@ pub fn inspect_file(
 
 fn inspect_source(
     src: &mut dyn ImageSource,
-    options: InspectOptions,
+    options: &InspectOptions,
 ) -> Result<InspectReport, ImageError> {
     let size = src.len()?;
-    let (ctx, kind, detected_by) = resolve(src, &options)?;
+    let (ctx, kind, detected_by) = resolve(src, options)?;
     let mut report = InspectReport {
         schema: 3,
         family: ctx.map(|ctx| ctx.backend.id()),

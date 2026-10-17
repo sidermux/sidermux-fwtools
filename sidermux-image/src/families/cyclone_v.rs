@@ -13,7 +13,7 @@ pub struct Header {
     flags: u8,
     length_words: u16,
     reserved: u16,
-    header_checksum: u16,
+    checksum: u16,
 }
 
 impl Header {
@@ -23,6 +23,7 @@ impl Header {
     pub const OFFSET: usize = 0x40;
 
     /// Serializes the header in little-endian field order.
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; Self::SIZE] {
         let mut bytes = [0u8; Self::SIZE];
 
@@ -31,13 +32,14 @@ impl Header {
         bytes[5] = self.flags;
         bytes[6..8].copy_from_slice(&self.length_words.to_le_bytes());
         bytes[8..10].copy_from_slice(&self.reserved.to_le_bytes());
-        bytes[10..12].copy_from_slice(&self.header_checksum.to_le_bytes());
+        bytes[10..12].copy_from_slice(&self.checksum.to_le_bytes());
 
         bytes
     }
 
     /// Builds a header declaring `length_words` 32-bit words of payload and
     /// computes the header checksum (byte sum over the first ten bytes).
+    #[must_use]
     pub fn new(length_words: u16) -> Self {
         let mut header = Self {
             validation_word: 0x3130_5341,
@@ -45,12 +47,12 @@ impl Header {
             flags: 0,
             length_words,
             reserved: 0,
-            header_checksum: 0,
+            checksum: 0,
         };
 
         let bytes = header.to_bytes();
 
-        header.header_checksum = bytes[..10].iter().map(|&byte| u16::from(byte)).sum();
+        header.checksum = bytes[..10].iter().map(|&byte| u16::from(byte)).sum();
 
         header
     }

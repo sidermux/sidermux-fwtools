@@ -1,8 +1,9 @@
 //! Compiled board profiles: what a profile declares, and the registry that
 //! resolves `--board` lookups. Profiles describe packaging, not hardware
 //! initialization.
-use crate::{backend::FamilyBackend, error::ImageError};
 use serde::Serialize;
+
+use crate::{backend::FamilyBackend, error::ImageError};
 
 /// Input kinds a board profile may declare. Packaging entry points reject
 /// payloads whose kind the profile does not declare.
@@ -120,6 +121,7 @@ impl BoardProfile {
 }
 /// Every profile compiled into this build, in registration order. Empty when
 /// no family feature is enabled.
+#[must_use]
 pub fn boards() -> &'static [&'static BoardProfile] {
     static REGISTERED: &[&BoardProfile] = &[
         #[cfg(feature = "cyclone-v")]

@@ -1,10 +1,12 @@
-#![cfg(feature = "cyclone-v")]
 //! Vendor oracle tests for the first supported family. Point
 //! SIDERMUX_CYCLONE_V_VENDOR_SPL_DIR at the pinned vendor build's spl/
 //! directory (see the crate documentation). Each family owns its own oracle
 //! file and environment variables; no fixtures are shared across families.
-use sidermux_fwtools::families::cyclone_v::GENERIC;
+#![cfg(feature = "cyclone-v")]
+
 use std::path::PathBuf;
+
+use sidermux_fwtools::families::cyclone_v::GENERIC;
 const BOARD: &sidermux_fwtools::BoardProfile = &GENERIC;
 
 use sidermux_fwtools::{BootImage, assemble_elf_with_dtb, extract_elf_load_image};
@@ -17,9 +19,9 @@ fn read(name: &str) -> Vec<u8> {
 }
 
 fn dtb_offset() -> usize {
-    std::env::var("SIDERMUX_CYCLONE_V_VENDOR_DTB_OFFSET")
-        .map(|offset| offset.parse().expect("DTB offset must be decimal"))
-        .unwrap_or(0xCF10) // pinned build: nodtb length + __bss_size, not SPL_PAD_TO
+    std::env::var("SIDERMUX_CYCLONE_V_VENDOR_DTB_OFFSET").map_or(0xCF10, |offset| {
+        offset.parse().expect("DTB offset must be decimal")
+    }) // pinned build: nodtb length + __bss_size, not SPL_PAD_TO
 }
 
 #[test]
